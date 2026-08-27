@@ -17,11 +17,33 @@ atv-mqtt/
 ## Setup
 
 Requires Python 3.9.6 (as used by `/usr/bin/python3` on the deployment host).
-Dependencies are hard-pinned in `requirements.txt` for exact recovery:
+Dependencies are hard-pinned in `requirements.txt` for exact recovery.
 
-```bash
-python3 -m pip install -r requirements.txt
-```
+### Installation (deployment host)
+
+1. Clone the repo onto the host:
+   ```bash
+   git clone https://github.com/horstvanbommel/atv-mqtt.git /Users/Shared/atv-mqtt
+   ```
+2. Create the credentials file from the template and fill in real values
+   (see [Credentials](#credentials) below):
+   ```bash
+   cd /Users/Shared/atv-mqtt
+   cp scripts/env.example scripts/.env
+   ```
+3. Install the pinned dependencies:
+   ```bash
+   python3 -m pip install -r requirements.txt
+   ```
+4. Install and start the launchd service:
+   ```bash
+   cp scripts/com.fbn.atvbridge.plist ~/Library/LaunchAgents/com.fbn.atvbridge.plist
+   launchctl load ~/Library/LaunchAgents/com.fbn.atvbridge.plist
+   ```
+
+To recover on a new/replacement host, repeat these four steps — steps 1 and 3
+reproduce the exact code and dependency versions, step 2 restores credentials
+from a backed-up `.env`.
 
 ### Credentials
 
@@ -33,9 +55,9 @@ template and fill in real values:
 cp scripts/env.example scripts/.env
 ```
 
-On the deployment host, the script runs from `/Users/Shared/atv-mqtt/`
+On the deployment host, the script runs from `/Users/Shared/atv-mqtt/scripts/`
 (see `com.fbn.atvbridge.plist`), so `.env` must live there too:
-`/Users/Shared/atv-mqtt/.env`.
+`/Users/Shared/atv-mqtt/scripts/.env`.
 
 ## Architecture
 
