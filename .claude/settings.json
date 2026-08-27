@@ -1,0 +1,53 @@
+{
+  "apiKeyHelper": "~/.claude/get-api-key.sh",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://adesso-ai-hub.3asabc.de"
+  },
+  "hooks": {
+    "PostToolUse": [],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash ./.claude/hooks/pre-command/check-sensitive-path.sh",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash ./.claude/hooks/pre-command/check-sensitive-path.sh",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bash -c \"if [ -d .beads ]; then bd prime 2\u003e/dev/null || true; fi\"",
+            "type": "command"
+          },
+          {
+            "command": "bash -c \"./.claude/hooks/pre-command/check-toolchain.sh 2\u003e/dev/null || true\"",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "bash -c \"if [ -d .beads ]; then bd sync 2\u003e/dev/null || true; fi\"",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
