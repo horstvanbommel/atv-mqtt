@@ -58,25 +58,33 @@ from a backed-up `.env`.
 
 ### Installation (Alpine Linux / OpenRC)
 
-The service is defined as an OpenRC init script, e.g. `/etc/init.d/atv-mqtt`
-(`RC_SVCNAME=atv-mqtt`), using `supervise-daemon` to capture stdout/stderr:
+The service is defined as an OpenRC init script at `/etc/init.d/atv-mqtt`
+(`RC_SVCNAME=atv-mqtt`), which captures stdout/stderr into `output_log`/
+`error_log`:
 
 ```sh
 #!/sbin/openrc-run
 
-name="atv-mqtt"
+# Name des Dienstes im Status
+description="ATV-MQTT Bridge"
+
+# Bestimmt die Startreihenfolge: Startet erst NACH Mosquitto und Netzwerk
+depend() {
+    need net mosquitto
+    after mosquitto
+}
+
+# Pfad zu Python und deinem Skript
 command="/usr/bin/python3"
 command_args="/opt/atv-mqtt/scripts/atv_mqtt_bridge.py"
-command_background="yes"
-supervisor="supervise-daemon"
+
+# Lässt den Prozess im Hintergrund als Daemon laufen
+command_background=true
+
+# Speicherort für Prozess-ID und Logs
 pidfile="/run/${RC_SVCNAME}.pid"
 output_log="/var/log/${RC_SVCNAME}.log"
 error_log="/var/log/${RC_SVCNAME}.err"
-
-depend() {
-    need net
-    after mosquitto
-}
 ```
 
 1. Clone the repo and set up `.env` and dependencies as in steps 1–3 above
@@ -95,8 +103,8 @@ depend() {
    rc-service crond start
    ```
    `scripts/atv-mqtt.logrotate` rotates weekly or at 5 MB, keeping 5
-   compressed backups, and uses `copytruncate` since `supervise-daemon` keeps
-   the log files open for the lifetime of the process.
+   compressed backups, and uses `copytruncate` since OpenRC keeps
+   `output_log`/`error_log` open for the lifetime of the process.
 
 ### Credentials
 
