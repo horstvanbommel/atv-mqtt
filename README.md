@@ -8,8 +8,9 @@ Python daemon bridging KNX home automation (via Gira HomeServer + MQTT) with App
 atv-mqtt/
 ├── scripts/                       # Production and operational scripts
 │   ├── atv_mqtt_bridge.py         # Main daemon: KNX ↔ MQTT ↔ Apple TV bridge
-│   ├── com.fbn.atvbridge.plist    # launchd plist config for MacOS
-│   ├── com.fbn.atvbridge.newsyslog.conf  # newsyslog rotation for launchd stdout/stderr logs
+│   ├── com.fbn.atvbridge.plist    # launchd plist config for macOS
+│   ├── com.fbn.atvbridge.newsyslog.conf  # newsyslog rotation for launchd stdout/stderr logs (macOS)
+│   ├── atv-mqtt.logrotate         # logrotate rotation for OpenRC stdout/stderr logs (Alpine)
 ├── docs/
 │   └── arc42/                     # Architecture documentation (§01–§12)
 └── .claude/                       # Claude Code configuration (hooks, rules, commands)
@@ -20,7 +21,11 @@ atv-mqtt/
 Requires Python 3.9.6 (as used by `/usr/bin/python3` on the deployment host).
 Dependencies are hard-pinned in `requirements.txt` for exact recovery.
 
-### Installation (deployment host)
+The script itself only logs to stdout/stderr — it writes no log file of its
+own. Each platform's service manager redirects that output into files and is
+also responsible for rotating them, so those files never grow unbounded.
+
+### Installation (macOS / launchd)
 
 1. Clone the repo onto the host:
    ```bash
@@ -42,8 +47,7 @@ Dependencies are hard-pinned in `requirements.txt` for exact recovery.
    launchctl load ~/Library/LaunchAgents/com.fbn.atvbridge.plist
    ```
 5. Install log rotation for the launchd stdout/stderr redirects
-   (`/tmp/atvbridge.out`, `/tmp/atvbridge.err`). The application's own log
-   file (`/tmp/atvbridge.log`) rotates itself:
+   (`/tmp/atvbridge.out`, `/tmp/atvbridge.err`):
    ```bash
    sudo cp scripts/com.fbn.atvbridge.newsyslog.conf /etc/newsyslog.d/
    ```
@@ -51,6 +55,48 @@ Dependencies are hard-pinned in `requirements.txt` for exact recovery.
 To recover on a new/replacement host, repeat these five steps — steps 1 and 3
 reproduce the exact code and dependency versions, step 2 restores credentials
 from a backed-up `.env`.
+
+### Installation (Alpine Linux / OpenRC)
+
+The service is defined as an OpenRC init script, e.g. `/etc/init.d/atv-mqtt`
+(`RC_SVCNAME=atv-mqtt`), using `supervise-daemon` to capture stdout/stderr:
+
+```sh
+#!/sbin/openrc-run
+
+name="atv-mqtt"
+command="/usr/bin/python3"
+command_args="/opt/atv-mqtt/scripts/atv_mqtt_bridge.py"
+command_background="yes"
+supervisor="supervise-daemon"
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/${RC_SVCNAME}.log"
+error_log="/var/log/${RC_SVCNAME}.err"
+
+depend() {
+    need net
+    after mosquitto
+}
+```
+
+1. Clone the repo and set up `.env` and dependencies as in steps 1–3 above
+   (adjust paths, e.g. `/opt/atv-mqtt`).
+2. Install and start the OpenRC service (using an init script like the one
+   above):
+   ```bash
+   rc-update add atv-mqtt default
+   rc-service atv-mqtt start
+   ```
+3. Install log rotation for `/var/log/atv-mqtt.log` / `.err`:
+   ```bash
+   apk add logrotate
+   cp scripts/atv-mqtt.logrotate /etc/logrotate.d/atv-mqtt
+   rc-update add crond default
+   rc-service crond start
+   ```
+   `scripts/atv-mqtt.logrotate` rotates weekly or at 5 MB, keeping 5
+   compressed backups, and uses `copytruncate` since `supervise-daemon` keeps
+   the log files open for the lifetime of the process.
 
 ### Credentials
 

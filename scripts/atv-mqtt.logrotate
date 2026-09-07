@@ -1,0 +1,23 @@
+# logrotate config for the Alpine/OpenRC service (RC_SVCNAME=atv-mqtt),
+# which writes stdout/stderr to:
+#   output_log="/var/log/${RC_SVCNAME}.log"
+#   error_log="/var/log/${RC_SVCNAME}.err"
+#
+# The script itself only logs to stdout/stderr and writes no log file of
+# its own — OpenRC captures that output into the two files above.
+#
+# Installation:
+#   apk add logrotate
+#   cp scripts/atv-mqtt.logrotate /etc/logrotate.d/atv-mqtt
+#   rc-update add crond default && rc-service crond start
+
+/var/log/atv-mqtt.log /var/log/atv-mqtt.err {
+    weekly
+    rotate 5
+    size 5M
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+}

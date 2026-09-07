@@ -6,7 +6,6 @@ from pyatv import connect, scan
 from pyatv.const import Protocol, PowerState, DeviceState
 from pyatv.interface import PowerListener, PushListener
 import logging
-from logging.handlers import RotatingFileHandler
 import sys
 
 # --- KONFIGURATION ---
@@ -44,15 +43,14 @@ DEVICES = {
 }
 
 # --- LOGGING SETUP ---
-# RotatingFileHandler statt FileHandler, damit /tmp/atvbridge.log nicht
-# unbegrenzt wächst (der Prozess läuft dauerhaft unter launchd/KeepAlive).
-log_file_handler = RotatingFileHandler(
-    '/tmp/atvbridge.log', maxBytes=5 * 1024 * 1024, backupCount=5
-)
+# Nur stdout/stderr — der Service-Manager der jeweiligen Plattform leitet
+# das in eine Datei um (launchd StandardOutPath/-ErrorPath auf macOS,
+# OpenRC output_log/error_log auf Alpine) und ist dort auch für die
+# Rotation zuständig (newsyslog bzw. logrotate, siehe scripts/ + README).
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [ATV-Bridge] %(levelname)s: %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout), log_file_handler]
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 
 # --- ZUSTANDSSPEICHER ---
