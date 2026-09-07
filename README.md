@@ -9,6 +9,7 @@ atv-mqtt/
 ├── scripts/                       # Production and operational scripts
 │   ├── atv_mqtt_bridge.py         # Main daemon: KNX ↔ MQTT ↔ Apple TV bridge
 │   ├── com.fbn.atvbridge.plist    # launchd plist config for MacOS
+│   ├── com.fbn.atvbridge.newsyslog.conf  # newsyslog rotation for launchd stdout/stderr logs
 ├── docs/
 │   └── arc42/                     # Architecture documentation (§01–§12)
 └── .claude/                       # Claude Code configuration (hooks, rules, commands)
@@ -40,8 +41,14 @@ Dependencies are hard-pinned in `requirements.txt` for exact recovery.
    cp scripts/com.fbn.atvbridge.plist ~/Library/LaunchAgents/com.fbn.atvbridge.plist
    launchctl load ~/Library/LaunchAgents/com.fbn.atvbridge.plist
    ```
+5. Install log rotation for the launchd stdout/stderr redirects
+   (`/tmp/atvbridge.out`, `/tmp/atvbridge.err`). The application's own log
+   file (`/tmp/atvbridge.log`) rotates itself:
+   ```bash
+   sudo cp scripts/com.fbn.atvbridge.newsyslog.conf /etc/newsyslog.d/
+   ```
 
-To recover on a new/replacement host, repeat these four steps — steps 1 and 3
+To recover on a new/replacement host, repeat these five steps — steps 1 and 3
 reproduce the exact code and dependency versions, step 2 restores credentials
 from a backed-up `.env`.
 
